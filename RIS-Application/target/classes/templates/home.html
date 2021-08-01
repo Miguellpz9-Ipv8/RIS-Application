@@ -1,0 +1,575 @@
+<!DOCTYPE HTML>
+<html xmlns:th="https://www.thymeleaf.org" xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head> 
+    <title>User Login</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+    <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+    
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.css">
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.js"></script>
+    
+    <link rel="stylesheet" href="/css/styles.css">
+    <script>
+        $(document).ready(function(){
+            
+            //      MODALS
+
+            $('body').on('click', '.orderModifyButton', function(){
+                $('.modal-tile').hide();
+                $('.modal, #ModifyAppointmentModal').show();
+                $("body").toggleClass("dialogIsOpen");
+
+                var orderRow = $(this).parents('tr');
+
+                $('#PatientFirstNameInput').val(orderRow.data('first_name'));
+                $('#PatientLastNameInput').val(orderRow.data('last_name'));
+                $('#PatientDOBInput').val(orderRow.data('dob'));
+                $('#AppointmentPatientInput').val(orderRow.data('patient'));
+                $('#AppointmentOrderInput').val(orderRow.data('order'));
+                $('#AppointmentModalityInput').val(orderRow.data('modalityid'));
+                $('#AppointmentModalityText').val(orderRow.data('modalityname'));
+            });
+            
+            $(document).on('click','.close-modal', function(){
+                $('.modal-tile').hide();
+                $("body").toggleClass("dialogIsOpen");
+
+                $('input[id$="Input"]').val('');
+            });
+
+            //      ROW BUTTONS
+
+            $('body').on('click', '.appointmentCheckInButton', function(){
+
+                var appointmentRow = $(this).parents('tr');
+
+                $('#AppointmentCheckInInput').val(appointmentRow.data('appointment'));
+                $('#AppointmentCheckInForm').submit();
+
+            });
+
+            $('body').on('click', '.appointmentCompleteOrderButton', function(){
+                window.location="/imaging/order/" + $(this).parents('tr').data('order');
+            });
+
+            $('body').on('click', '.completeDiagnosticReportButton', function(){
+                window.location="/diagnostics/order/" + $(this).parents('tr').data('order');
+            });
+
+            $('body').on('click', '.placedOrderViewButton', function(){
+                window.location="/referral/order/" + $(this).parents('tr').data('order');
+            });
+
+            
+
+            
+
+
+            //      JS INITIALIZERS
+
+            $('#TodaysAppointmentTable, #ReceptionistCheckedInAppointmentTable, #TechnicianCheckedInAppointmentTable').dataTable({
+                "bPaginate": false,
+                "bFilter": true,
+                "bInfo": false,
+                "bAutoWidth": false,
+                "columnDefs": [
+                    {"visible" : false,
+                     "targets" : [0]}
+                ]}
+            );
+            
+            $('#UnscheduledOrderTable').dataTable({
+                "bPaginate": false,
+                "bFilter": true,
+                "bInfo": false,
+                "bAutoWidth": false,
+                "columnDefs": [
+                    {"visible" : false,
+                     "targets" : [0, 5, 6]}
+                ]}
+            );
+            
+            $('#PlacedOrderTable').dataTable({
+                "bPaginate": false,
+                "bFilter": true,
+                "bInfo": false,
+                "bAutoWidth": false,
+                "columnDefs": [
+                    {"visible" : false,
+                     "targets" : [0, 2, 6]}
+                ]}
+            );
+            
+            $('#CompleteImagingOrderTable').dataTable({
+                "bPaginate": false,
+                "bFilter": true,
+                "bInfo": false,
+                "bAutoWidth": false,
+                "columnDefs": [
+                    {"visible" : false,
+                     "targets" : [0, 5, 6]}
+                ]}
+            );
+            
+            $('#AppointmentDateInput').datepicker({
+                changeMonth: true, 
+                changeYear: true, 
+                dateFormat: 'yy-mm-dd',
+                container: '#ModifyPatientModal',
+                defaultDate: +0
+            });
+        });
+    </script>
+</head>
+<body>
+    <div style="padding-left: calc(100vw - 100%);">
+    <div class="modal" style="display: none;">
+        <div class="container">
+            <div class="row">
+
+                <div class="col-sm-12 modal-tile" style="display: none; top: 50%; transform: translateY(-50%);" id="ModifyAppointmentModal">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <h1 id="AppointmentModalTitle">Schedule Appointment</h1>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row" id="AppointmentWarning" style="display: none; font-weight: bold;">
+                        <div class="col-sm-12 alert alert-danger" id="AppointmentWarningContent">
+                        </div>
+                    </div>
+                    <br>
+                    <form action="#" th:action="@{/staff/updateAppointment}" method="post">
+                        <input type="hidden" id="AppointmentIdInput">
+                        <div style="overflow-y: auto; max-height: 500px; overflow-x: hidden; padding: 10px;">
+                            <div class="row">
+                               <!-- <div class="col-sm-12">
+                                    <h4>Patient Info</h4>
+                                    <hr>
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="PatientFirstNameInput">First Name:</label>
+                                    <input type="text" class="form-control" id="PatientFirstNameInput" placeholder="First Name" readonly>
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="PatientLastNameInput">Last Name:</label>
+                                    <input type="text" class="form-control" id="PatientLastNameInput" placeholder="Last Name" readonly>
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="PatientDOBInput">DOB:</label>
+                                    <input type="text" class="form-control" id="PatientDOBInput" placeholder="01/01/1970" readonly>
+                                </div>
+                                -->
+                                <div class="col-sm-12">
+                                    <h4>Contact Info</h4>
+                                    <hr>
+                                </div>
+                                <input type="hidden" id="AppointmentIdInput" th:field="${appointment.id}">
+                                <input type="hidden" id="AppointmentPatientInput" th:field="${appointment.patient}">
+                                <input type="hidden" id="AppointmentOrderInput" th:field="${appointment.order}">
+                                <div class="col-sm-3 pad-input">
+                                    <label for="AppointmentPhoneNumberInput">Phone Number:</label>
+                                    <input type="text" class="form-control" id="AppointmentPhoneNumberInput" th:field="${appointment.phonenumber}" placeholder="000-000-0000">
+                                </div>
+                                <div class="col-sm-3 pad-input">
+                                    <label for="AppointmentEmailInput">Email Address:</label>
+                                    <input type="text" class="form-control" id="AppointmentEmailInput" th:field="${appointment.emailaddress}" placeholder="demo@example.com">
+                                </div>
+                                <div class="col-sm-3 pad-input">
+                                    <label for="AppointmentDateInput">Appointment Date:</label>
+                                    <input type="text" class="form-control" id="AppointmentDateInput" th:field="${appointment.date}" placeholder="01/01/1970" readonly>
+                                </div>
+                                <div class="col-sm-3 pad-input">
+                                    <label for="AppointmentTimeInput">Appointment Time:</label>
+                                    <select class="form-control" id="AppointmentTimeInput" th:field="${appointment.time}">
+                                        <option th:each="time : ${times_list}" th:value="${time}" th:text="${time}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-12">
+                                    <h4>Office Info</h4>
+                                    <hr>
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="AppointmentRadiologistInput">Radiologist:</label>
+                                    <select class="form-control" id="AppointmentRadiologistInput" th:field="${appointment.radiologist}">
+                                        <option th:each="radiologist : ${radiologists_list}" th:value="${radiologist.getUser_id()}" th:text="${radiologist.getFull_name()}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="AppointmentTechnicianInput">Technician:</label>
+                                    <select class="form-control" id="AppointmentTechnicianInput" th:field="${appointment.technician}">
+                                        <option th:each="technician : ${technicians_list}" th:value="${technician.getUser_id()}" th:text="${technician.getFull_name()}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="AppointmentModalityInput">Modality:</label>
+                                    <input type="hidden" id="AppointmentModalityInput" th:field="${appointment.modality}">
+                                    <input type="text" class="form-control" id="AppointmentModalityText" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="row">
+                            <div class="col-sm-10">
+                                <input type="submit" class="btn btn-md btn-primary savePatientButton" style="float:right; padding-right: 10px;" value="Schedule Appointment"/>
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="button" class="btn btn-md btn-danger close-modal" style="float:right;" value="Cancel"/>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container" id="ContentWrapper">
+        <div class="row"> <!--      NAVBAR      -->
+            <div class="col-sm-12 sn-navbar">
+                <div class="sn-navbar-btn" onclick="window.location='/home'">
+                    Home
+                </div>
+                <div sec:authorize="hasAuthority('ADMIN')" class="sn-navbar-btn" onclick="window.location='/admin/dashboard'">
+                    Admin
+                </div>
+                <div sec:authorize="hasAnyAuthority('ADMIN', 'REFERRAL_DOCTOR')" class="sn-navbar-btn" onclick="window.location='/referral'">
+                    Referrals
+                </div>
+                <div sec:authorize="hasAnyAuthority('ADMIN', 'RECEPTIONIST', 'TECHNICIAN', 'RADIOLOGIST')" class="sn-navbar-btn" onclick="window.location='/appointments'">
+                    Appointments
+                </div>
+                <div sec:authorize="hasAnyAuthority('ADMIN', 'RECEPTIONIST', 'RADIOLOGIST')" class="sn-navbar-btn" onclick="window.location='/orders'">
+                    Orders
+                </div>
+                <div class="sn-navbar-btn" style="float:right;" onclick="window.location='/user_logout'">
+                    Logout
+                </div>
+                
+                <div class="sn-navbar-user" style="float:right;">
+                    Logged in: <span sec:authentication="name">Username</span>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-12 panel">
+
+                <div class="inset-panel" sec:authorize="hasAnyAuthority('ADMIN', 'REFERRAL_DOCTOR')">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <center><h3>Placed Orders</h3></center>
+                        </div>
+                    </div>
+                    <hr>
+                    <br>
+                    <div style="overflow-y: auto; max-height: 600px;">
+                        <table id="PlacedOrderTable" class="display">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Patient</th>
+                                    <th>Referral MD</th>
+                                    <th>Modality</th>
+                                    <th>Notes</th>
+                                    <th>Status</th>
+                                    <th>Report</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="order : ${placed_orders_list}"
+                                th:attr="data-order=${order.getId()}">
+                                    <td th:text="${order.getId()}">-1</td>
+                                    <td th:text="${order.getPatientObject().getLast_name()} + ', ' + ${order.getPatientObject().getFirst_name}" >-1</td>
+                                    <td th:text="${order.getReferralMDObject().getFull_name()}">-1</td>
+                                    <td th:text="${order.getModalityObject().getName()}">-1</td>
+                                    <td th:text="${order.getNotes()}">-1</td>
+                                    <td th:text="${order.getStatusObject().getName()}">-1</td>
+                                    <td th:text="${order.getReport()}">-1</td>
+                                    <td><p class="view-a placedOrderViewButton">View</p></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="inset-panel" sec:authorize="hasAnyAuthority('ADMIN', 'RECEPTIONIST')">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <center><h3>Checked-In Appointments</h3></center>
+                        </div>
+                    </div>
+                    <hr>
+                    <br>
+                    <div style="overflow-y: auto; max-height: 600px;">
+                        <table id="ReceptionistCheckedInAppointmentTable" class="display">
+                            <thead>
+                                <tr>
+                                    <th>Appointment ID</th>
+                                    <th>Patient</th>
+                                    <th>Modality</th>
+                                    <th>Date and Time</th>
+                                    <th>Radiologist</th>
+                                    <th>Technician</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="appointment : ${checked_in_appointments_list}"
+                                th:attr="data-appointment=${appointment.getId()}">
+
+                                    <td th:text="${appointment.getId()}">Appointment ID</td>
+                                    <td th:text="${appointment.getPatientObject().getLast_name()} + ', ' + ${appointment.getPatientObject().getFirst_name()}">Patient</td>
+                                    <td th:text="${appointment.getModalityObject().getName()}">Modality</td>
+                                    <td th:text="${appointment.getDatetime()}">Date and Time</td>
+                                    <td th:text="${appointment.getRadiologistObject().getFull_name()}">Radiologist</td>
+                                    <td th:text="${appointment.getTechnicianObject().getFull_name()}">Technician</td>
+                                    <td>
+                                        <p th:if="${appointment.closed == 1}" style="margin: 0;">Concluded</p>
+                                        <p th:unless="${appointment.closed == 1}" style="margin: 0;">In Progress</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <form action="#" id="AppointmentCheckInForm" th:action="@{/staff/checkinAppointment}" method="post" sec:authorize="hasAnyAuthority('ADMIN', 'RECEPTIONIST')">
+                    <input type="hidden" id="AppointmentCheckInInput" th:field="${checkin_appointment.id}">
+                </form>
+
+                <div class="inset-panel" sec:authorize="hasAnyAuthority('ADMIN', 'RECEPTIONIST')">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <center><h3>Today's Appointments</h3></center>
+                        </div>
+                    </div>
+                    <hr>
+                    <br>
+                    <div style="overflow-y: auto; max-height: 600px;">
+                        <table id="TodaysAppointmentTable" class="display">
+                            <thead>
+                                <tr>
+                                    <th>Appointment ID</th>
+                                    <th>Patient</th>
+                                    <th>Modality</th>
+                                    <th>Date and Time</th>
+                                    <th>Radiologist</th>
+                                    <th>Technician</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="appointment : ${todays_appointments_list}"
+                                th:attr="data-appointment=${appointment.getId()}">
+
+                                    <td th:text="${appointment.getId()}">Appointment ID</td>
+                                    <td th:text="${appointment.getPatientObject().getLast_name()} + ', ' + ${appointment.getPatientObject().getFirst_name()}">Patient</td>
+                                    <td th:text="${appointment.getModalityObject().getName()}">Modality</td>
+                                    <td th:text="${appointment.getDatetime()}">Date and Time</td>
+                                    <td th:text="${appointment.getRadiologistObject().getFull_name()}">Radiologist</td>
+                                    <td th:text="${appointment.getTechnicianObject().getFull_name()}">Technician</td>
+                                    <td><p class="view-a appointmentCheckInButton">Check-In</p></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="inset-panel" sec:authorize="hasAnyAuthority('ADMIN', 'RECEPTIONIST')">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <center><h3>Unscheduled Orders</h3></center>
+                        </div>
+                    </div>
+                    <hr>
+                    <br>
+                    <div style="overflow-y: auto; max-height: 600px;">
+                        <table id="UnscheduledOrderTable" class="display">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Patient</th>
+                                    <th>Referral MD</th>
+                                    <th>Modality</th>
+                                    <th>Notes</th>
+                                    <th>Status</th>
+                                    <th>Report</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="order : ${unscheduled_orders_list}"
+                                
+                                th:attr="data-order=${order.getId()}, 
+                                data-patient=${order.getPatient()},
+                                data-first_name=${order.getPatientObject().getFirst_name()},
+                                data-last_name=${order.getPatientObject().getLast_name()},
+                                data-dob=${order.getPatientObject().getDob()},
+                                data-modalityid=${order.getModality()},
+                                data-modalityname=${order.getModalityObject().getName()}
+                                ">
+                                    <td th:text="${order.getId()}">-1</td>
+                                    <td th:text="${order.getPatientObject().getLast_name()} + ', ' + ${order.getPatientObject().getFirst_name}" >-1</td>
+                                    <td th:text="${order.getReferralMDObject().getFull_name()}">-1</td>
+                                    <td th:text="${order.getModalityObject().getName()}">-1</td>
+                                    <td th:text="${order.getNotes()}">-1</td>
+                                    <td th:text="${order.getStatusObject().getName()}">-1</td>
+                                    <td th:text="${order.getReport()}">-1</td>
+                                    <td><p class="view-a orderModifyButton">Schedule Appointment</p></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="inset-panel" sec:authorize="hasAnyAuthority('ADMIN', 'TECHNICIAN')">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <center><h3>Checked-In Appointments</h3></center>
+                        </div>
+                    </div>
+                    <hr>
+                    <br>
+                    <div style="overflow-y: auto; max-height: 600px;">
+                        <table id="TechnicianCheckedInAppointmentTable" class="display">
+                            <thead>
+                                <tr>
+                                    <th>Appointment ID</th>
+                                    <th>Patient</th>
+                                    <th>Modality</th>
+                                    <th>Date and Time</th>
+                                    <th>Radiologist</th>
+                                    <th>Technician</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="appointment : ${checked_in_appointments_list}"
+                                    th:attr="data-appointment=${appointment.getId()},
+                                             data-order=${appointment.getOrder()}
+                                " th:unless="${appointment.getClosed() == 1}">
+
+                                    <td th:text="${appointment.getId()}">Appointment ID</td>
+                                    <td th:text="${appointment.getPatientObject().getLast_name()} + ', ' + ${appointment.getPatientObject().getFirst_name}" >-1</td>
+                                    <td th:text="${appointment.getModalityObject().getName()}">Modality</td>
+                                    <td th:text="${appointment.getDatetime()}">Date and Time</td>
+                                    <td th:text="${appointment.getRadiologistObject().getFull_name()}">Radiologist</td>
+                                    <td th:text="${appointment.getTechnicianObject().getFull_name()}">Technician</td>
+                                    <td><p class="view-a appointmentCompleteOrderButton">Complete Order</p></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="inset-panel" sec:authorize="hasAnyAuthority('ADMIN', 'RADIOLOGIST')">
+                    <div class="row" data-name="tete">
+                        <div class="col-sm-12">
+                            <center><h3>Review Imaging Orders</h3></center>
+                        </div>
+                    </div>
+                    <hr>
+                    <br>
+                    <div style="overflow-y: auto; max-height: 600px;">
+                        <table id="CompleteImagingOrderTable" class="display">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Patient</th>
+                                    <th>Referral MD</th>
+                                    <th>Modality</th>
+                                    <th>Notes</th>
+                                    <th>Status</th>
+                                    <th>Report</th>
+                                    <th></th>
+                                    
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="order : ${complete_imaging_orders_list}"
+                                
+                                th:attr="data-order=${order.getId()}, 
+                                data-patient=${order.getPatient()},
+                                data-first_name=${order.getPatientObject().getFirst_name()},
+                                data-last_name=${order.getPatientObject().getLast_name()},
+                                data-dob=${order.getPatientObject().getDob()},
+                                data-modality=${order.getModality()}
+                                ">
+                                    <td th:text="${order.getId()}">-1</td>
+                                    <td th:text="${order.getPatientObject().getLast_name()} + ', ' + ${order.getPatientObject().getFirst_name}" >-1</td>
+                                    <td th:text="${order.getReferralMDObject().getFull_name()}">-1</td>
+                                    
+                                    <td th:text="${order.getModalityObject().getName()}">-1</td>
+                                    <td th:text="${order.getNotes()}">-1</td>
+                                    <td th:text="${order.getStatusObject().getName()}">-1</td>
+                                    <td th:text="${order.getReport()}">-1</td>
+                                    <td><p class="view-a completeDiagnosticReportButton">Review Order</p></td>
+                                    
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+               
+                <div class="row">
+                    <div class="col-sm-12 panel">
+        
+                        <div class="inset-panel">
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <center><h3>Modality</h3></center>
+                                </div>
+                            </div>
+                            <hr>
+                            <br>
+                            <div style="overflow-y: auto; max-height: 600px;">
+                                
+                                <table id="modalityDate" class="display">
+                                    <thead>
+                                        <tr >
+                                            
+                                            <th  class = "modItem">Modality</th>
+                                            
+                                            <th class = "modItem2">Dates being used</th>
+                                            
+                                        </tr>
+                                    </thead>
+                                    <tbody class = "modalityDate">
+                                        <tr th:each="appointment : ${appointments_list}" >
+                                       
+                                            <td th:text="${appointment.getModalityObject().getName()}" class = "modItem">Modality</td>
+                                            <td th:text="${appointment.getDatetime()}" class="modItem2">Dates being used</td>
+                                       
+                                            
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            
+                            </div>
+                        </div>
+        
+                    </div>
+                </div>
+                <div class="inset-panel" sec:authorize="hasAnyAuthority('USER')">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <Title> User </Title>
+                            <h2> You do not have any roles</h2>
+                            <h2> Please contact the System Administrator and request a role</h2>
+                            <a href="mailto:admin@xmppy.com? subject = User-Role-Request"> Email the Administrator</a>
+                        </div>
+                    </div>
+                </div>
+
+                
+                
+
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
