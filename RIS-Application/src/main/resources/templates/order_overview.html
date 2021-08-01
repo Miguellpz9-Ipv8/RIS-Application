@@ -1,0 +1,251 @@
+<!DOCTYPE HTML>
+<html xmlns:th="https://www.thymeleaf.org" xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head> 
+    <title>User Login</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+    
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.css">
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.js"></script>
+    
+    <link rel="stylesheet" href="/css/styles.css">
+    <script>
+        $(document).ready(function(){
+            
+            $('body').on('click', '.appointmentCompleteOrderButton', function(){
+                window.location="/imaging/order/" + $(this).parents('tr').data('order');
+            });
+            
+            $('body').on('click', '.btn-file', function(){
+                window.location="/download/" + $(this).data('file');
+            });
+
+            $('body').on('click', '.patientOverviewButton', function(){
+                $('.modal, #PatientModal').show();
+                $("body").toggleClass("dialogIsOpen");
+
+                var patientRow = $(this).parents('tr');
+
+                
+                $('.alert-value-input').val(0);
+
+                $('.alert-value-input').each(function(inputIndex, inputValue){
+                    $('.alert-info').each(function(alertIndex, alertValue){
+                        if($(inputValue).data('id') == $(alertValue).find('.alert-info-id').val())
+                        {
+                            $(inputValue).val($(alertValue).find('.alert-info-value').val())
+                        }
+                    });
+                });
+
+                $('.modal .form-control').attr('disabled', true);
+                $('#PatientModalTitle').html('Patient Overview')
+            });
+            
+            $(document).on('click','.close-modal', function(){
+                $('.modal-tile, #PasswordWarning, #UserWarning').hide();
+                $("body").toggleClass("dialogIsOpen");
+            });
+
+
+            $('#AppointmentTable, #TodaysAppointmentTable, #CheckedInAppointmentTable').dataTable({
+                "bPaginate": false,
+                "bFilter": true,
+                "bInfo": false,
+                "bAutoWidth": false }
+            );
+        });
+    </script>
+</head>
+<body>
+<div style="padding-left: calc(100vw - 100%);">
+    <div class="modal" style="display: none;">
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-12 modal-tile" style="display: none; top: 50%; transform: translateY(-50%);" id="PatientModal">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <h1 id="PatientModalTitle">Patient Overview</h1>
+                        </div>
+                    </div>
+                    <hr>
+                    <br>
+                    <div class="patient-alerts-table-div" hidden>
+                        <div class="alert-info" th:each="alert : ${patient.getAlerts()}">
+                            <input type="hidden" class="alert-info-id" th:value="${alert.getAlert_id()}"/>
+                            <input type="hidden" class="alert-info-value" th:value="${alert.getAlert_value()}"/>
+                        </div>
+                    </div>
+                    <form action="#" th:action="@{/referral/updatePatient}" method="post">
+                        <input type="hidden" id="PatientIdInput" th:field="${patient.id}">
+                        <div style="overflow-y: auto; max-height: 400px; overflow-x: hidden; padding: 10px;">
+                            <div class="row">
+                                <div class="col-sm-4 pad-input">
+                                    <label for="PatientFirstNameInput">First Name:</label>
+                                    <input type="text" class="form-control" id="PatientFirstNameInput" th:field="${patient.first_name}" placeholder="First Name" required>
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="PatientLastNameInput">Last Name:</label>
+                                    <input type="text" class="form-control" id="PatientLastNameInput" th:field="${patient.last_name}" placeholder="Last Name" required>
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="PatientDOBInput">Date of Birth:</label>
+                                    <input type="text" class="form-control" id="PatientDOBInput" th:field="${patient.dob}" readonly required>
+                                </div>
+                                <div class="col-sm-2 pad-input">
+                                    <label for="PatientSexInput">Sex:</label>
+                                    <select class="form-control" id="PatientSexInput" th:field="${patient.sex}">
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-5 pad-input">
+                                    <label for="PatientRaceInput">Race:</label>
+                                    <select class="form-control" id="PatientRaceInput" th:field="${patient.race}">
+                                        <option value="American Indian or Alaska Native">American Indian or Alaska Native</option>
+                                        <option value="Asian">Asian</option>
+                                        <option value="Black or African American">Black or African American</option>
+                                        <option value="Native Hawaiian or Other Pacific Islander">Native Hawaiian or Other Pacific Islander</option>
+                                        <option value="White">White</option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-5 pad-input">
+                                    <label for="PatientEthnicityInput">Ethnicity:</label>
+                                    <select class="form-control" id="PatientEthnicityInput" th:field="${patient.ethnicity}">
+                                        <option value="Hispanic or Latino">Hispanic or Latino</option>
+                                        <option value="Not Hispanic or Latino">Not Hispanic or Latino</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <label>Patient Alerts</label>
+                                </div>
+                                <div class="col-sm-4">
+                                    <hr>
+                                    <div class="patient-alert-div" th:each="alert : ${patient_alerts_list}" style="margin-bottom:20px;" th:attr="data-id=${alert.getId()}">
+                                        <input class="alert-id-input" type="hidden" th:value="${alert.getId()}">
+                                        <label th:text="${alert.getName()}"></label>
+                                        <select class="form-control alert-value-input" th:attr="data-id=${alert.getId()}">
+                                            <option value="0">No</option>
+                                            <option value="1">Yes</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <input type="button" class="btn btn-md btn-danger close-modal" style="float:right;" value="Cancel"/>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container" id="ContentWrapper">
+        <div class="row"> <!--      NAVBAR      -->
+            <div class="col-sm-12 sn-navbar">
+                <div class="sn-navbar-btn" onclick="window.location='/home'">
+                    Home
+                </div>
+                <div sec:authorize="hasAuthority('ADMIN')" class="sn-navbar-btn" onclick="window.location='/admin/dashboard'">
+                    Admin
+                </div>
+                <div sec:authorize="hasAnyAuthority('ADMIN', 'REFERRAL_DOCTOR')" class="sn-navbar-btn" onclick="window.location='/referral'">
+                    Referrals
+                </div>
+                <div sec:authorize="hasAnyAuthority('ADMIN', 'RECEPTIONIST', 'TECHNICIAN', 'RADIOLOGIST')" class="sn-navbar-btn" onclick="window.location='/appointments'">
+                    Appointments
+                </div>
+                <div sec:authorize="hasAnyAuthority('ADMIN', 'RECEPTIONIST', 'RADIOLOGIST')" class="sn-navbar-btn" onclick="window.location='/orders'">
+                    Orders
+                </div>
+                <div class="sn-navbar-btn" style="float:right;" onclick="window.location='/user_logout'">
+                    Logout
+                </div>
+                <div class="sn-navbar-user" style="float:right;">
+                    Logged in: <span sec:authentication="name">Username</span>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-12 panel">
+
+                <div class="inset-panel">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <center><h3>Order Overview</h3></center>
+                        </div>
+                    </div>
+                    <br>
+                    <h3>Patient Info<p class="view-a patientOverviewButton" style="float:right; font-size: 1rem;">View Patient Overview</p></h3>
+                    <hr>
+                    <div class="row">
+                        <div class="col-sm-4 pad-input">
+                            <label>First Name:</label>
+                            <input class="form-control" th:value="${patient.getFirst_name()}" readonly>
+                        </div>
+                        <div class="col-sm-4 pad-input">
+                            <label>Last Name:</label>
+                            <input class="form-control" th:value="${patient.getLast_name()}" readonly>
+                        </div>
+                        <div class="col-sm-4 pad-input">
+                            <label>Date of Birth:</label>
+                            <input class="form-control" th:value="${patient.getDob()}" readonly>
+                        </div>
+                    </div>
+                    <br>
+                    <h3>Order Info</h3>
+                    <hr>
+                    <div class="row">
+                        <div class="col-sm-4 pad-input">
+                            <label>Modality:</label>
+                            <input class="form-control" th:value="${order.getModalityObject().getName()}" readonly>
+                        </div>
+                        <div class="col-sm-8 pad-input">
+                            <label>Referral MD Notes:</label>
+                            <textarea class="form-control" th:text="${order.getNotes()}" readonly></textarea>
+                        </div>
+                    </div>
+                    <div th:if="${order.getStatus() == 3}">
+                        <br>
+                        <h3>Imaging Order</h3>
+                        <hr>
+                        <div class="row">
+                            <div class="col-sm-12 pad-input">
+                                <label>Uploaded Images:</label>
+                                <ul>
+                                    <li th:each="file_upload: ${file_uploads_list}"><p class="view-a btn-file" style="float:none;" th:attr="data-file=${file_upload.getFilename()}" th:text="${file_upload.getFilename()}"></p></li>
+                                </ul>
+                            </div>
+                            <div class="col-sm-4 pad-input">
+                            </div>
+                        </div>
+                        <br>
+                        <h3>Diagnostic Report</h3>
+                        <hr>
+                        <div class="row">
+                            <div class="col-sm-12 pad-input">
+                                <textarea class="form-control" th:field="${diagnostics.diagnostic}" readonly></textarea>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <input type="button" class="btn btn-md btn-danger" style="float:right;" value="Back" onclick="window.location='/home'"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

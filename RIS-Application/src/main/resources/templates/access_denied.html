@@ -1,0 +1,36 @@
+<!DOCTYPE HTML>
+<html xmlns:th="https://www.thymeleaf.org">
+<head> 
+    <title>User Login</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script>
+        $(document).ready(function(){
+            if(!$('#LoginAlert p').is(':empty'))
+            {
+                $('#LoginAlert').show();
+            }
+
+            $('body').on('click', 'input', function(){
+                $('#LoginAlert').hide();
+            });
+        });
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-2 panel set-center" style="position: absolute; top:25%; padding: 20px;">
+                <center>
+                    <h1>Access Denied.</h1>
+                    <input type="button" class="btn btn-md btn-primary" value="Home" onclick="window.location='/home'"/>
+                    <input type="button" class="btn btn-md btn-primary" value="Logout" onclick="window.location='/user_logout'"/>
+                </center>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

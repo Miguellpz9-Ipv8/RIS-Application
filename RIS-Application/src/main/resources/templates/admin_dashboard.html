@@ -1,0 +1,1363 @@
+<!DOCTYPE HTML>
+<html xmlns:th="https://www.thymeleaf.org" xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity5">
+<head> 
+    <title>User Login</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+    <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+    
+    
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.css">
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.js"></script>
+    
+
+    <link rel="stylesheet" href="/css/styles.css">
+
+
+
+
+    <script th:inline="javascript">
+        $(document).ready(function(){            
+            
+            $('.patient-alert-div').each(function(index, val){
+                $(val).find('.alert-id-input').attr('name', 'patients_alerts[' + index + '].alert_id');
+                $(val).find('.alert-value-input').attr('name', 'patients_alerts[' + index + '].alert_value');
+            });
+
+            var roleRowIndex = 0;
+
+            function addUserRole(id, name)
+            {
+                var alreadyExists = false;
+                $('.user-role-id').each(function(key, val){
+                    console.log($(val).val() == id);
+                    if($(val).val() == id)
+                    {
+                        alreadyExists = true;
+                    }
+                });
+                
+                if(alreadyExists)       //  If the role already exists, don't add a new one.
+                    return;
+
+                var html = '';
+                html += '<div class="col-sm-7 user-role-div" style="margin-bottom:20px;">';
+                html +=     '<div class="row">';
+                html +=         '<div class="col-sm-6">';
+                html +=             '<input type="hidden" class="form-control user-role-id" name="users_roles[' + roleRowIndex + '].role_id" value="' + id + '" readonly/>';
+                html +=             '<input type="text" class="form-control" value="' + name + '" readonly/>';
+                html +=         '</div>';
+                html +=         '<div class="col-sm-3">';
+                html +=             '<input type="button" class="btn btn-md btn-danger btn-block removeUserRoleButton" value="Remove"/>';
+                html +=         '</div>';
+                html +=     '</div>';
+                html += '</div>';
+                
+                $('.modal .role-row').append(html);
+                $('.removeUserRoleButton').show();
+                roleRowIndex++;
+            }
+
+            function userWarning(warning)
+            {
+                $('#UserWarning').show();
+                $('#UserWarningContent').html(warning);
+            }
+
+            $('body').on('click', '.userModifyButton', function(){
+                $('.modal-tile, #UserWarning').hide();
+                $('.modal, #ModifyUserModal').show();
+                $("body").toggleClass("dialogIsOpen");
+
+                var userRow = $(this).parents('tr');
+
+                $('.form-control[type="text"]').val('');
+
+                $('#UserModalTitle').html('Modify User');
+                $('#UsernameInput').attr('readonly', true);
+
+                $('#HeadingUser').html($(userRow).find('.username').html());
+                $('#UserIDInput').val($(userRow).find('.userId').html());
+                $('#UsernameInput').val($(userRow).find('.username').html());
+                $('#FullNameInput').val($(userRow).find('.fullName').html());
+                $('#UserEmailInput').val($(userRow).find('.email').html());
+
+                if($(userRow).data('enabled') == 1)
+                    $('#UserEnabled').attr('checked', true);
+                else
+                    $('#UserEnabled').attr('checked', false);
+
+                roleRowIndex = 0;
+                $('.modal .role-row').html('');
+                $(userRow).find('.userroles').find('p').each(function(key, val){
+                    addUserRole($(val).data('id'), $(val).data('name'));
+                });
+                if($('.modal .role-row').children().length <= 1)
+                {
+                    if($('.modal .role-row').children().length == 0)
+                    {
+                        addUserRole(2, "User");         //  If removed all roles, add default user role.
+                    }
+                    $('.removeUserRoleButton').hide();
+                }
+            });
+
+            $('body').on('click', '.userCreateButton', function(){
+                $('.modal-tile, #UserWarning').hide();
+                $('.modal, #ModifyUserModal').show();
+                $("body").toggleClass("dialogIsOpen");
+
+                $('#HeadingUser').html('New User');
+                $('#UserModalTitle').html('Create New User');
+                $('#UsernameInput').attr('readonly', false);
+
+                $('.form-control[type="text"]').val('');
+
+                $('.modal .role-row').html('');
+                addUserRole(2, "User");
+                $('.removeUserRoleButton').hide();
+            });
+
+            $('body').on('click', '.removeUserRoleButton', function(){
+                $(this).parents('.user-role-div').remove();
+                roleRowIndex--;
+                if($('.modal .role-row').children().length <= 1)
+                {
+                    if($('.modal .role-row').children().length == 0)
+                    {
+                        addUserRole(2, "User");         //  If removed all roles, add default user role.
+                    }
+                    $('.removeUserRoleButton').hide();
+                }
+            });
+
+            $('body').on('click', '.addUserRoleButton', function(){
+                addUserRole($('#AddUserRoleInput').val(), $('#AddUserRoleInput option:selected').text())
+            });
+
+            $(document).on('click','.close-modal', function(){
+                $('.modal-tile, #PasswordWarning, #UserWarning').hide();
+                $("body").toggleClass("dialogIsOpen");
+                $('.user-password').val('');
+            });
+
+            $('.user-password').on('keyup', function(){
+                if($('#ChangeUserPassword').val() == $('#ConfirmUserPassword').val())
+                {
+                    $('#PasswordWarning').hide();
+                }
+                else
+                {
+                    $('#PasswordWarning').show();
+                }
+            });
+            
+            $('body').on('click', '.saveUserButton', function(event){
+                $('#UserWarning').hide();
+                if($('#UserIDInput').val().length > 0)
+                {
+                    if($('#ChangeUserPassword').val() != $('#ConfirmUserPassword').val())
+                    {
+                        userWarning("Passwords must match");
+                        event.preventDefault();
+                    }
+                }
+                else
+                {
+                    if($('#ChangeUserPassword').val() != $('#ConfirmUserPassword').val())
+                    {
+                        userWarning("Passwords must match");
+                        event.preventDefault();
+                    }
+                    if($('#ChangeUserPassword').val().length <= 0)
+                    {
+                        userWarning("Password cannot be empty");
+                        event.preventDefault();
+                    }
+                    if($('#UsernameInput').val().length <= 0)
+                    {
+                        userWarning("Username cannot be empty");
+                        event.preventDefault();
+                    }
+                }
+            });
+    
+            $('body').on('click', '.modalityCreateButton', function(){
+                $('.modal-tile, #ModalityWarning').hide();
+                $('.modal, #ModifyModalityModal').show();
+                $("body").toggleClass("dialogIsOpen");
+
+                $('.form-control').attr('disabled', false);
+                $('.form-control').val('');
+
+                $('#ModalityModalTitle').html('Create New Modality')
+            });
+            
+            $('body').on('click', '.modalityModifyButton', function(){
+                $('.modal-tile, #ModalityWarning').hide();
+                $('.modal, #ModifyModalityModal').show();
+                $("body").toggleClass("dialogIsOpen");
+                $('.form-control').val('');
+
+                var modalityRow = $(this).parents('tr');
+
+                $('option').attr('selected', false);
+
+                $('.form-control').attr('disabled', false);
+                $('#ModalityIdInput').val($(modalityRow).data('id'));
+                $('#ModalityNameInput').val($(modalityRow).data('name'));
+
+                $('#ModalityModalTitle').html('Modality Overview')
+            });
+ 
+            $('body').on('click', '.patientAlertCreateButton', function(){
+                $('.modal-tile, #PatientAlertWarning').hide();
+                $('.modal, #ModifyPatientAlertModal').show();
+                $("body").toggleClass("dialogIsOpen");
+
+                $('.form-control').attr('disabled', false);
+                $('.form-control').val('');
+
+                $('#PatientAlertModalTitle').html('Create New Patient Alert')
+            });
+
+            $('body').on('click', '.patientAlertModifyButton', function(){
+                $('.modal-tile, #PatientAlertWarning').hide();
+                $('.modal, #ModifyPatientAlertModal').show();
+                $("body").toggleClass("dialogIsOpen");
+                $('.form-control').val('');
+
+                var patientAlertRow = $(this).parents('tr');
+
+                $('option').attr('selected', false);
+
+                $('.form-control').attr('disabled', false);
+                $('#PatientAlertIdInput').val($(patientAlertRow).data('id'));
+                $('#PatientAlertNameInput').val($(patientAlertRow).data('name'));
+
+                $('#PatientAlertModalTitle').html('Patient Alert Overview')
+            });
+
+            $('body').on('click', '.patientCreateButton', function(){
+                $('.modal-tile, #PatientWarning').hide();
+                $('.modal, #ModifyPatientModal').show();
+                $("body").toggleClass("dialogIsOpen");
+
+                $('.form-control').attr('disabled', false);
+                $('.form-control').val('');
+                $('.alert-value-input').val(0);
+                $('#PatientIdInput').val('');
+
+                $('#PatientModalTitle').html('Create New Patient')
+            });
+
+            $('body').on('click', '.patientModifyButton', function(){
+                $('.modal-tile, #PatientWarning').hide();
+                $('.modal, #ModifyPatientModal').show();
+                $("body").toggleClass("dialogIsOpen");
+                $('.form-control').val('');
+
+                var patientRow = $(this).parents('tr');
+
+                $('option').attr('selected', false);
+
+                $('.alert-value-input').val(0);
+
+                $('.alert-value-input').each(function(inputIndex, inputValue){
+                    $(patientRow).find('.alert-info').each(function(alertIndex, alertValue){
+                        if($(inputValue).data('id') == $(alertValue).find('.alert-info-id').val())
+                        {
+                            $(inputValue).val($(alertValue).find('.alert-info-value').val())
+                        }
+                    });
+                });
+
+                $('.form-control').attr('disabled', false);
+                $('#PatientIdInput').val($(patientRow).data('id'));
+                $('#PatientFirstNameInput').val($(patientRow).data('first_name'));
+                $('#PatientLastNameInput').val($(patientRow).data('last_name'));
+                $('#PatientDOBInput').val($(patientRow).data('dob'));
+                $('#PatientSexInput').val($(patientRow).data('sex'));
+                $('#PatientRaceInput').val($(patientRow).data('race'));
+                $('#PatientEthnicityInput').val($(patientRow).data('ethnicity'));
+
+                $('#PatientModalTitle').html('Patient Overview')
+            });
+
+            $('body').on('click', '.orderCreateButton', function(){
+                $('.modal-tile, #OrderWarning').hide();
+                $('.modal, #ModifyOrderModal').show();
+                $("body").toggleClass("dialogIsOpen");
+
+                $('.form-control').attr('disabled', false);
+                $('.form-control').val('');
+
+                $('#OrderModalTitle').html('Create New Order')
+            });
+
+            $('body').on('click', '.orderModifyButton', function(){
+                $('.modal-tile, #OrderWarning').hide();
+                $('.modal, #ModifyOrderModal').show();
+                $("body").toggleClass("dialogIsOpen");
+                $('.form-control').val('');
+
+                var orderRow = $(this).parents('tr');
+
+                $('option').attr('selected', false);
+
+                $('.form-control').attr('disabled', false);
+                $('#OrderIdInput').val($(orderRow).data('id'));
+                $('#OrderPatientIdInput').val($(orderRow).data('patient'));
+                $('#OrderReferralMDInput').val($(orderRow).data('referral_md'));
+                $('#OrderStatusInput').val($(orderRow).data('status'));
+                $('#OrderModalityInput').val($(orderRow).data('modality'));
+                $('#OrderNotesInput').val($(orderRow).data('notes'));
+
+                $('#OrderModalTitle').html('Order Overview')
+            });
+
+            $('body').on('click', '.appointmentCreateButton', function(){
+                $('.modal-tile, #AppointmentWarning').hide();
+                $('.modal, #ModifyAppointmentModal').show();
+                $("body").toggleClass("dialogIsOpen");
+
+                $('.form-control').attr('disabled', false);
+                $('.form-control').val('');
+
+                $('#AppointmentOrderOption').attr('value', '');
+                $('#AppointmentOrderOption').html('');
+
+                $('#AppointmentModalTitle').html('Create New Appointment')
+            });
+
+            $('body').on('click', '.appointmentModifyButton', function(){
+                $('.modal-tile, #AppointmentWarning').hide();
+                $('.modal, #ModifyAppointmentModal').show();
+                $("body").toggleClass("dialogIsOpen");
+                $('.form-control').val('');
+
+                var appointmentRow = $(this).parents('tr');
+
+                $('#AppointmentOrderOption').attr('value',$(appointmentRow).find('.data-order').val());
+                $('#AppointmentOrderOption').html($(appointmentRow).find('.data-order').val());
+
+                
+                $('#AppointmentIdInput').val($(appointmentRow).find('.data-id').val());
+                $('#AppointmentPhoneNumberInput').val($(appointmentRow).find('.data-phone').val());
+                $('#AppointmentEmailInput').val($(appointmentRow).find('.data-email').val());
+                $('#AppointmentDateInput').val($(appointmentRow).find('.data-date').val());
+                $('#AppointmentTimeInput').val($(appointmentRow).find('.data-time').val());
+                $('#AppointmentOrderInput').val($(appointmentRow).find('.data-order').val());
+                $('#AppointmentRadiologistInput').val($(appointmentRow).find('.data-radiologist').val());
+                $('#AppointmentTechnicianInput').val($(appointmentRow).find('.data-technician').val());
+
+                $('#AppointmentModalTitle').html('Appointment Overview')
+            });
+
+            $('body').on('click', '.fileUploadCreateButton', function(){
+                $('.modal-tile, #NewFileUploadWarning').hide();
+                $('.modal, #NewFileUploadModal').show();
+                $("body").toggleClass("dialogIsOpen");
+
+                $('.form-control').attr('disabled', false);
+                $('.form-control').val('');
+
+                $('#NewFileUploadModalTitle').html('Create New File Upload')
+            });
+
+            $('body').on('click', '.fileUploadModifyButton', function(){
+                $('.modal-tile, #FileUploadWarning').hide();
+                $('.modal, #ModifyFileUploadModal').show();
+                $("body").toggleClass("dialogIsOpen");
+                $('.form-control').val('');
+
+                var fileUploadRow = $(this).parents('tr');
+
+                $('option').attr('selected', false);
+
+                $('.form-control').attr('disabled', false);
+                $('#FileUploadIdInput').val($(fileUploadRow).data('id'));
+                $('#FileUploadFileNameInput').val($(fileUploadRow).data('filename'));
+                $('#FileUploadFileTypeInput').val($(fileUploadRow).data('filetype'));
+                $('#FileUploadOrderInput').val($(fileUploadRow).data('order'));
+
+                $('#FileUploadModalTitle').html('File Upload Overview')
+            });
+            
+            $('body').on('click', '.fileUploadDownloadButton', function(){
+                window.location="/download/" + $(this).parents('tr').data('filename');
+            });
+
+            $('body').on('click', '.diagnosticReportCreateButton', function(){
+                $('.modal-tile, #DiagnosticReportWarning').hide();
+                $('.modal, #DiagnosticReportModal').show();
+                $("body").toggleClass("dialogIsOpen");
+
+                $('.form-control').attr('disabled', false);
+                $('.form-control').val('');
+
+                $('#DiagnosticReportOrderOption').attr('value', '');
+                $('#DiagnosticReportOrderOption').html('');
+                $('#DiagnosticReportModalTitle').html('Create New Diagnostic Report')
+            });
+
+            $('body').on('click', '.diagnosticReportModifyButton', function(){
+                $('.modal-tile, #DiagnosticReportWarning').hide();
+                $('.modal, #DiagnosticReportModal').show();
+                $("body").toggleClass("dialogIsOpen");
+                $('.form-control').val('');
+
+                var diagnosticReportRow = $(this).parents('tr');
+
+                $('option').attr('selected', false);
+
+                $('#DiagnosticReportOrderOption').attr('value', $(diagnosticReportRow).data('order'));
+                $('#DiagnosticReportOrderOption').html($(diagnosticReportRow).data('order'));
+                $('.form-control').attr('disabled', false);
+                $('#DiagnosticReportIdInput').val($(diagnosticReportRow).data('id'));
+                $('#DiagnosticReportRadiologistInput').val($(diagnosticReportRow).data('radiologist'));
+                $('#DiagnosticReportOrderInput').val($(diagnosticReportRow).data('order'));
+                $('#DiagnosticReportDiagnosticInput').val($(diagnosticReportRow).data('report'));
+
+                $('#FileUploadModalTitle').html('Diagnostic Report Overview')
+            });
+            
+            $('#PatientDOBInput, #AppointmentDateInput').datepicker({
+                changeMonth: true, 
+                changeYear: true, 
+                dateFormat: 'yy-mm-dd'
+            });
+            
+            $('#UserTable, #ModalityTable, #PatientAlertTable, #PatientTable, #OrderTable, #AppointmentTable, #FileUploadTable, #DiagnosticReportTable').dataTable({
+                "bPaginate": false,
+                "bFilter": true,
+                "bInfo": false,
+                "bAutoWidth": false }
+            );
+
+        });
+
+        
+    </script>
+</head>
+<body>
+<div style="padding-left: calc(100vw - 100%);">
+    <div class="modal" style="display: none;">
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-12 modal-tile" style="display: none; top: 50%; transform: translateY(-50%);" id="ModifyUserModal">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <h1 id="UserModalTitle">Modify User<p id="HeadingUser" style="float:right;">Admin</p></h1>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row" id="UserWarning" style="display: none; font-weight: bold;">
+                        <div class="col-sm-12 alert alert-danger" id="UserWarningContent">
+                        </div>
+                    </div>
+                    <br>
+                    <form action="#" th:action="@{/admin/updateUser}" method="post">
+                        <div class="row">
+                            <div class="col-sm-1">
+                                <label for="UserIDInput">ID:</label>
+                                <input type="text" class="form-control" id="UserIDInput" th:field="${user.user_id}" readonly/>
+                            </div>
+                            <div class="col-sm-3">
+                                <label for="UsernameInput">Username:</label>
+                                <input type="text" class="form-control" id="UsernameInput" th:field="${user.username}" readonly/>
+                            </div>
+                            <div class="col-sm-4">
+                                <label for="FullNameInput">Display Name:</label>
+                                <input type="text" class="form-control" id="FullNameInput" th:field="${user.full_name}" placeholder="Full Name"/>
+                            </div>
+                            <div class="col-sm-3">
+                                <label for="UserEmailInput">Email Address:</label>
+                                <input type="text" class="form-control" id="UserEmailInput" th:field="${user.email}" placeholder="example@demo.com"/>
+                            </div>
+                            <div class="col-sm-1">
+                                <label for="FullNameInput">Enabled:</label>
+                                <input type="checkbox" class="form-control" id="UserEnabled" th:field="${user.enabled}">
+                            </div>
+                        </div>
+                        <br>
+                        <div class="row">
+                            <div class="col-sm-5">
+                                <label for="AddUserRoleInput">Add User Role:</label>
+                                <div class="row">
+                                    <div class="col-sm-8">
+                                        <select class="form-control" id="AddUserRoleInput">
+                                            <option th:each="role : ${roles_list}" th:text="${role.getName()}" th:value="${role.getRole_id()}">role</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <input type="button" class="btn btn-md btn-success btn-block addUserRoleButton" value="Add"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-sm-7">
+                                <div class="row">
+                                    <div class="col-sm-6">
+                                        <label for="ChangeUserPassword">Change Password:</label>
+                                        <input type="password" class="form-control user-password" id="ChangeUserPassword" th:field="${user.password}"/>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label for="ConfirmUserPassword">Confirm Password:</label>
+                                        <input type="password" class="form-control user-password" id="ConfirmUserPassword"/>
+                                    </div>
+                                    <div class="col-sm-12 alert alert-danger" id="PasswordWarning" style="display: none;">
+                                        Passwords do not match.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="row">
+                            <div class="col-sm-12">
+                                <label>User Roles:</label>
+                                <div class="row role-row">
+                                    <div class="col-sm-7">
+                                        <div class="row">
+                                            <div class="col-sm-6">
+                                                <input type="text" class="form-control" readonly/>
+                                            </div>
+                                            <div class="col-sm-3">
+                                                <input type="button" class="btn btn-md btn-danger btn-block removeUserRoleButton" value="Remove"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="row">
+                            <div class="col-sm-10">
+                                <input type="submit" class="btn btn-md btn-primary saveUserButton" style="float:right; padding-right: 10px;" value="Save Changes"/>
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="button" class="btn btn-md btn-danger close-modal" style="float:right;" value="Cancel"/>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-12 modal-tile" style="display: none; top: 50%; transform: translateY(-50%);" id="ModifyModalityModal">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <h1 id="ModalityModalTitle">Create New Modality</h1>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row" id="ModalityWarning" style="display: none; font-weight: bold;">
+                        <div class="col-sm-12 alert alert-danger" id="ModalityWarningContent">
+                        </div>
+                    </div>
+                    <br>
+                    <form action="#" th:action="@{/admin/updateModality}" method="post">
+                        <input type="hidden" id="ModalityIdInput" th:field="${modality.id}">
+                        <div style="overflow-y: auto; max-height: 400px; overflow-x: hidden; padding: 10px;">
+                            <div class="row">
+                                <div class="col-sm-4 pad-input">
+                                    <label for="ModalityNameInput">Modality Name:</label>
+                                    <input type="text" class="form-control" id="ModalityNameInput" th:field="${modality.name}" required>
+                                </div>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="row">
+                            <div class="col-sm-10">
+                                <input type="submit" class="btn btn-md btn-primary saveModalityButton" style="float:right; padding-right: 10px;" value="Save Modality"/>
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="button" class="btn btn-md btn-danger close-modal" style="float:right;" value="Cancel"/>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-12 modal-tile" style="display: none; top: 50%; transform: translateY(-50%);" id="ModifyPatientAlertModal">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <h1 id="PatientAlertModalTitle">Create New Patient Alert</h1>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row" id="PatientAlertWarning" style="display: none; font-weight: bold;">
+                        <div class="col-sm-12 alert alert-danger" id="PatientAlertWarningContent">
+                        </div>
+                    </div>
+                    <br>
+                    <form action="#" th:action="@{/admin/updatePatientAlert}" method="post">
+                        <input type="hidden" id="PatientAlertIdInput" th:field="${alert.id}">
+                        <div style="overflow-y: auto; max-height: 400px; overflow-x: hidden; padding: 10px;">
+                            <div class="row">
+                                <div class="col-sm-6 pad-input">
+                                    <label for="PatientAlertNameInput">Patient Alert Name:</label>
+                                    <input type="text" class="form-control" id="PatientAlertNameInput" th:field="${alert.name}" required>
+                                </div>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="row">
+                            <div class="col-sm-10">
+                                <input type="submit" class="btn btn-md btn-primary savePatientAlertButton" style="float:right; padding-right: 10px;" value="Save Patient Alert"/>
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="button" class="btn btn-md btn-danger close-modal" style="float:right;" value="Cancel"/>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-12 modal-tile" style="display: none; top: 50%; transform: translateY(-50%);" id="ModifyPatientModal">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <h1 id="PatientModalTitle">Create New Patient</h1>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row" id="PatientWarning" style="display: none; font-weight: bold;">
+                        <div class="col-sm-12 alert alert-danger" id="PatientWarningContent">
+                        </div>
+                    </div>
+                    <br>
+                    <form action="#" th:action="@{/admin/updatePatient}" method="post">
+                        <input type="hidden" id="PatientIdInput" th:field="${patient.id}">
+                        <div style="overflow-y: auto; max-height: 400px; overflow-x: hidden; padding: 10px;">
+                            <div class="row">
+                                <div class="col-sm-4 pad-input">
+                                    <label for="PatientFirstNameInput">First Name:</label>
+                                    <input type="text" class="form-control" id="PatientFirstNameInput" th:field="${patient.first_name}" placeholder="First Name" required>
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="PatientLastNameInput">Last Name:</label>
+                                    <input type="text" class="form-control" id="PatientLastNameInput" th:field="${patient.last_name}" placeholder="Last Name" required>
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="PatientDOBInput">Date of Birth:</label>
+                                    <input type="text" class="form-control" id="PatientDOBInput" th:field="${patient.dob}" readonly required>
+                                </div>
+                                <div class="col-sm-2 pad-input">
+                                    <label for="PatientSexInput">Sex:</label>
+                                    <select class="form-control" id="PatientSexInput" th:field="${patient.sex}">
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-5 pad-input">
+                                    <label for="PatientRaceInput">Race:</label>
+                                    <select class="form-control" id="PatientRaceInput" th:field="${patient.race}">
+                                        <option value="American Indian or Alaska Native">American Indian or Alaska Native</option>
+                                        <option value="Asian">Asian</option>
+                                        <option value="Black or African American">Black or African American</option>
+                                        <option value="Native Hawaiian or Other Pacific Islander">Native Hawaiian or Other Pacific Islander</option>
+                                        <option value="White">White</option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-5 pad-input">
+                                    <label for="PatientEthnicityInput">Ethnicity:</label>
+                                    <select class="form-control" id="PatientEthnicityInput" th:field="${patient.ethnicity}">
+                                        <option value="Hispanic or Latino">Hispanic or Latino</option>
+                                        <option value="Not Hispanic or Latino">Not Hispanic or Latino</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <label>Patient Alerts</label>
+                                </div>
+                                <div class="col-sm-4">
+                                    <hr>
+                                    <div class="patient-alert-div" th:each="alert : ${patient_alerts_list}" style="margin-bottom:20px;" th:attr="data-id=${alert.getId()}">
+                                        <input class="alert-id-input" type="hidden" th:value="${alert.getId()}">
+                                        <label th:text="${alert.getName()}"></label>
+                                        <select class="form-control alert-value-input" th:attr="data-id=${alert.getId()}">
+                                            <option value="0">No</option>
+                                            <option value="1">Yes</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="row">
+                            <div class="col-sm-10">
+                                <input type="submit" class="btn btn-md btn-primary savePatientButton" style="float:right; padding-right: 10px;" value="Save Patient"/>
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="button" class="btn btn-md btn-danger close-modal" style="float:right;" value="Cancel"/>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-12 modal-tile" style="display: none; top: 50%; transform: translateY(-50%);" id="ModifyOrderModal">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <h1 id="OrderModalTitle">Create New Order</h1>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row" id="OrderWarning" style="display: none; font-weight: bold;">
+                        <div class="col-sm-12 alert alert-danger" id="OrderWarningContent">
+                        </div>
+                    </div>
+                    <br>
+                    <form action="#" th:action="@{/admin/updateOrder}" method="post">
+                        <input type="hidden" id="OrderIdInput" th:field="${order.id}">
+                        <div style="overflow-y: auto; max-height: 400px; overflow-x: hidden; padding: 10px;">
+                            <div class="row">
+                                <div class="col-sm-4 pad-input">
+                                    <label for="OrderPatientIdInput">Patient:</label>
+                                    <select class="form-control" id="OrderPatientIdInput" th:field="${order.patient}">
+                                        <option th:each="patient : ${patients_list}" th:value="${patient.getId()}" th:text="${patient.getLast_name()} + ', ' + ${patient.getFirst_name()}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="OrderReferralMDInput">Referral MD:</label>
+                                    <select class="form-control" id="OrderReferralMDInput" th:field="${order.referral_md}">
+                                        <option th:each="referral_md : ${referral_mds_list}" th:value="${referral_md.getUser_id()}" th:text="${referral_md.getFull_name()}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="OrderStatusInput">Status:</label>
+                                    <select class="form-control" id="OrderStatusInput" th:field="${order.status}">
+                                        <option th:each="order_status : ${order_status_list}" th:value="${order_status.getId()}" th:text="${order_status.getName()}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="OrderModalityInput">Modality:</label>
+                                    <select class="form-control" id="OrderModalityInput" th:field="${order.modality}">
+                                        <option th:each="modality : ${modalities_list}" th:value="${modality.getId()}" th:text="${modality.getName()}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-8 pad-input">
+                                    <label for="OrderNotesInput">Referral Notes:</label>
+                                    <textarea class="form-control" id="OrderNotesInput" th:field="${order.notes}"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="row">
+                            <div class="col-sm-10">
+                                <input type="submit" class="btn btn-md btn-primary saveOrderButton" style="float:right; padding-right: 10px;" value="Save Order"/>
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="button" class="btn btn-md btn-danger close-modal" style="float:right;" value="Cancel"/>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-12 modal-tile" style="display: none; top: 50%; transform: translateY(-50%);" id="ModifyAppointmentModal">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <h1 id="AppointmentModalTitle">Create New Appointment</h1>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row" id="AppointmentWarning" style="display: none; font-weight: bold;">
+                        <div class="col-sm-12 alert alert-danger" id="AppointmentWarningContent">
+                        </div>
+                    </div>
+                    <br>
+                    <form action="#" th:action="@{/admin/updateAppointment}" method="post">
+                        <div style="overflow-y: auto; max-height: 500px; overflow-x: hidden; padding: 10px;">
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <h4>Contact Info</h4>
+                                    <hr>
+                                </div>
+                                <input type="hidden" id="AppointmentIdInput" th:field="${appointment.id}">
+                                <div class="col-sm-3 pad-input">
+                                    <label for="AppointmentPhoneNumberInput">Phone Number:</label>
+                                    <input type="text" class="form-control" id="AppointmentPhoneNumberInput" th:field="${appointment.phonenumber}" placeholder="000-000-0000">
+                                </div>
+                                <div class="col-sm-3 pad-input">
+                                    <label for="AppointmentEmailInput">Email Address:</label>
+                                    <input type="text" class="form-control" id="AppointmentEmailInput" th:field="${appointment.emailaddress}" placeholder="demo@example.com">
+                                </div>
+                                <div class="col-sm-3 pad-input">
+                                    <label for="AppointmentDateInput">Appointment Date:</label>
+                                    <input type="text" class="form-control" id="AppointmentDateInput" th:field="${appointment.date}" placeholder="01/01/1970" readonly>
+                                </div>
+                                <div class="col-sm-3 pad-input">
+                                    <label for="AppointmentTimeInput">Appointment Time:</label>
+                                    <select class="form-control" id="AppointmentTimeInput" th:field="${appointment.time}">
+                                        <option th:each="time : ${times_list}" th:value="${time}" th:text="${time}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-12">
+                                    <h4>Office Info</h4>
+                                    <hr>
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="AppointmentOrderInput">Order:</label>
+                                    <select class="form-control" id="AppointmentOrderInput" th:field="${appointment.order}">
+                                        <option id="AppointmentOrderOption" value=""></option>
+                                        <option th:each="order : ${unscheduled_orders_list}" th:value="${order.getId()}" th:text="${order.getId()}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="AppointmentRadiologistInput">Radiologist:</label>
+                                    <select class="form-control" id="AppointmentRadiologistInput" th:field="${appointment.radiologist}">
+                                        <option th:each="radiologist : ${radiologists_list}" th:value="${radiologist.getUser_id()}" th:text="${radiologist.getFull_name()}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="AppointmentTechnicianInput">Technician:</label>
+                                    <select class="form-control" id="AppointmentTechnicianInput" th:field="${appointment.technician}">
+                                        <option th:each="technician : ${technicians_list}" th:value="${technician.getUser_id()}" th:text="${technician.getFull_name()}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="row">
+                            <div class="col-sm-10">
+                                <input type="submit" class="btn btn-md btn-primary savePatientButton" style="float:right; padding-right: 10px;" value="Save Appointment"/>
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="button" class="btn btn-md btn-danger close-modal" style="float:right;" value="Cancel"/>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-12 modal-tile" style="display: none; top: 50%; transform: translateY(-50%);" id="ModifyFileUploadModal">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <h1 id="FileUploadModalTitle">Create New File Upload</h1>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row" id="FileUploadWarning" style="display: none; font-weight: bold;">
+                        <div class="col-sm-12 alert alert-danger" id="FileUploadWarningContent">
+                        </div>
+                    </div>
+                    <br>
+                    <form action="#" th:action="@{/admin/updateFileUpload}" method="post">
+                        <input type="hidden" id="FileUploadIdInput" th:field="${file_upload.id}">
+                        <div style="overflow-y: auto; max-height: 400px; overflow-x: hidden; padding: 10px;">
+                            <div class="row">
+                                <div class="col-sm-4 pad-input">
+                                    <label for="FileUploadFileNameInput">File Name:</label>
+                                    <input type="text" class="form-control" id="FileUploadFileNameInput" th:text="${file_upload.filename}" readonly required>
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="FileUploadFileTypeInput">File Type:</label>
+                                    <input type="text" class="form-control" id="FileUploadFileTypeInput" th:text="${file_upload.filetype}" readonly required>
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="FileUploadOrderInput">Order:</label>
+                                    <select class="form-control" id="FileUploadOrderInput" th:field="${file_upload.order}">
+                                        <option th:each="order : ${orders_list}" th:value="${order.getId()}" th:text="${order.getId()}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="row">
+                            <div class="col-sm-10">
+                                <input type="submit" class="btn btn-md btn-primary saveFileUploadButton" style="float:right; padding-right: 10px;" value="Save File Upload"/>
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="button" class="btn btn-md btn-danger close-modal" style="float:right;" value="Cancel"/>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-12 modal-tile" style="display: none; top: 50%; transform: translateY(-50%);" id="NewFileUploadModal">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <h1 id="NewFileUploadModalTitle">Create New File Upload</h1>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row" id="NewFileUploadWarning" style="display: none; font-weight: bold;">
+                        <div class="col-sm-12 alert alert-danger" id="NewFileUploadWarningContent">
+                        </div>
+                    </div>
+                    <br>
+                    <form enctype="multipart/form-data" method="POST" th:action="@{/admin/upload-file}">
+                        <div style="overflow-y: auto; max-height: 400px; overflow-x: hidden; padding: 10px;">
+                            <div class="row">
+                                <div class="col-sm-8 pad-input">
+                                    <label for="FileUploadFileNameInput">Upload:</label>
+                                    <p th:text="${message}" th:if="${message ne null}" class="alert alert-primary"></p>
+                                    <input type="file" name="file" class="form-control-file">
+                                </div>
+                                <div class="col-sm-4 pad-input">
+                                    <label for="NewFileUploadOrderInput">Order:</label>
+                                    <select class="form-control" id="FileUploadOrderInput" th:field="${order.id}">
+                                        <option th:each="order : ${orders_list}" th:value="${order.getId()}" th:text="${order.getId()}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="row">
+                            <div class="col-sm-10">
+                                <input type="submit" class="btn btn-md btn-primary saveFileUploadButton" style="float:right; padding-right: 10px;" value="Save File Upload"/>
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="button" class="btn btn-md btn-danger close-modal" style="float:right;" value="Cancel"/>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                <div class="col-sm-12 modal-tile" style="display: none; top: 50%; transform: translateY(-50%);" id="DiagnosticReportModal">
+                    <div class="row">
+                        <div class="col-sm-12">
+                            <h1 id="DiagnosticReportModalTitle">Create New File Upload</h1>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row" id="DiagnosticReportWarning" style="display: none; font-weight: bold;">
+                        <div class="col-sm-12 alert alert-danger" id="DiagnosticReportWarningContent">
+                        </div>
+                    </div>
+                    <br>
+                    <form action="#" th:action="@{/admin/updateDiagnosticReport}" method="post">
+                        <input type="hidden" id="DiagnosticReportIdInput" th:field="${diagnostic_report.id}">
+                        <div style="overflow-y: auto; max-height: 400px; overflow-x: hidden; padding: 10px;">
+                            <div class="row">
+                                <div class="col-sm-3 pad-input">
+                                    <label for="DiagnosticReportRadiologistInput">Radiologist:</label>
+                                    <select class="form-control" id="DiagnosticReportRadiologistInput" th:field="${diagnostic_report.radiologist}">
+                                        <option th:each="radiologist : ${radiologists_list}" th:value="${radiologist.getUser_id()}" th:text="${radiologist.getFull_name()}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-3 pad-input">
+                                    <label for="DiagnosticReportOrderInput">Order:</label>
+                                    <select class="form-control" id="DiagnosticReportOrderInput" th:field="${diagnostic_report.order}">
+                                        <option id="DiagnosticReportOrderOption" value=""></option>
+                                        <option th:each="order : ${orders_without_report_list}" th:value="${order.getId()}" th:text="${order.getId()}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-sm-6 pad-input">
+                                    <label for="DiagnosticReportDiagnosticInput">Report:</label>
+                                    <textarea class="form-control" id="DiagnosticReportDiagnosticInput" th:field="${diagnostic_report.diagnostic}"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <br>
+                        <div class="row">
+                            <div class="col-sm-10">
+                                <input type="submit" class="btn btn-md btn-primary saveDiagnosticReportButton" style="float:right; padding-right: 10px;" value="Save Diagnostic Report"/>
+                            </div>
+                            <div class="col-sm-2">
+                                <input type="button" class="btn btn-md btn-danger close-modal" style="float:right;" value="Cancel"/>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="container" id="ContentWrapper">
+        <div class="row"> <!--      NAVBAR      -->
+            <div class="col-sm-12 sn-navbar">
+                <div class="sn-navbar-btn" onclick="window.location='/home'">
+                    Home
+                </div>
+                <div sec:authorize="hasAuthority('ADMIN')" class="sn-navbar-btn" onclick="window.location='/admin/dashboard'">
+                    Admin
+                </div>
+                <div sec:authorize="hasAnyAuthority('ADMIN', 'REFERRAL_DOCTOR')" class="sn-navbar-btn" onclick="window.location='/referral'">
+                    Referrals
+                </div>
+                <div sec:authorize="hasAnyAuthority('ADMIN', 'RECEPTIONIST', 'TECHNICIAN', 'RADIOLOGIST')" class="sn-navbar-btn" onclick="window.location='/appointments'">
+                    Appointments
+                </div>
+                <div sec:authorize="hasAnyAuthority('ADMIN', 'RECEPTIONIST', 'RADIOLOGIST')" class="sn-navbar-btn" onclick="window.location='/orders'">
+                    Orders
+                </div>
+                <div class="sn-navbar-btn" style="float:right;" onclick="window.location='/user_logout'">
+                    Logout
+                </div>
+                <div class="sn-navbar-user" style="float:right;">
+                    Logged in: <span sec:authentication="name">Username</span>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-12 panel">
+                <div class="inset-panel">
+                    <div class="row">
+                        <div class="col-sm-4"><p></p></div>
+                        <div class="col-sm-4">
+                            <center><h3>System Users</h3></center>
+                        </div>
+                        <div class="col-sm-4">
+                            <p class="view-a userCreateButton" style="font-size: 24px; float:right;">New</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <br>
+                    <table id="UserTable" class="display">
+                        <thead>
+                            <tr>
+                                <th>User ID</th>
+                                <th>Username</th>
+                                <th>Display Name</th>
+                                <th>Email Address</th>
+                                <th>System Role</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="user : ${users_list}" th:attr="data-enabled=${user.getEnabled()}">
+                                <td th:text="${user.getUser_id()}" class="userId">-1</td>
+                                <td th:text="${user.getUsername()}" class="username">No Name</td>
+                                <td th:text="${user.getFull_name()}" class="fullName">test_user</td>
+                                <td th:text="${user.getEmail()}" class="email">@demo.com</td>
+                                <td class="userroles"><p style="margin: 0;" th:each="role, stats : ${user.getRoles()}" th:text="${role.name}" th:attr="data-id=${role.role_id}, data-name=${role.name}"></p></td>
+                                <td><p class="view-a userModifyButton">Modify</p></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="inset-panel">
+                    <div class="row">
+                        <div class="col-sm-4"><p></p></div>
+                        <div class="col-sm-4">
+                            <center><h3>Modalities</h3></center>
+                        </div>
+                        <div class="col-sm-4">
+                            <p class="view-a modalityCreateButton" style="font-size: 24px; float:right;">New</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <br>
+                    <table id="ModalityTable" class="display">
+                        <thead>
+                            <tr>
+                                <th>Modality ID</th>
+                                <th>Modality</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="modality : ${modalities_list}" th:attr="data-id=${modality.getId()}, data-name=${modality.getName()}">
+                                <td th:text="${modality.getId()}">-1</td>
+                                <td th:text="${modality.getName()}">No Name</td>
+                                <td><p class="view-a modalityModifyButton">Modify</p></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="inset-panel">
+                    <div class="row">
+                        <div class="col-sm-4"><p></p></div>
+                        <div class="col-sm-4">
+                            <center><h3>Patient Alerts</h3></center>
+                        </div>
+                        <div class="col-sm-4">
+                            <p class="view-a patientAlertCreateButton" style="font-size: 24px; float:right;">New</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <br>
+                    <table id="PatientAlertTable" class="display">
+                        <thead>
+                            <tr>
+                                <th>Patient Alert ID</th>
+                                <th>Patient Alert</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="alert : ${patient_alerts_list}" th:attr="data-id=${alert.getId()}, data-name=${alert.getName()}">
+                                <td th:text="${alert.getId()}">-1</td>
+                                <td th:text="${alert.getName()}">No Name</td>
+                                <td><p class="view-a patientAlertModifyButton">Modify</p></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="inset-panel">
+                    <div class="row">
+                        <div class="col-sm-4"><p></p></div>
+                        <div class="col-sm-4">
+                            <center><h3>Patients</h3></center>
+                        </div>
+                        <div class="col-sm-4">
+                            <p class="view-a patientCreateButton" style="font-size: 24px; float:right;">New</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <br>
+                    <div style="overflow-y: auto; max-height: 600px;">
+                        <table id="PatientTable" class="display">
+                            <thead>
+                                <tr>
+                                    <th>Patient ID</th>
+                                    <th>Date of Birth</th>
+                                    <th>Last Name</th>
+                                    <th>First Name</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="patient : ${patients_list}" 
+                                
+                                th:attr="data-id=${patient.getId()}, 
+                                data-first_name=${patient.getFirst_name()}, 
+                                data-last_name=${patient.getLast_name()},
+                                data-dob=${patient.getDob()},
+                                data-sex=${patient.getSex()},
+                                data-race=${patient.getRace()},
+                                data-ethnicity=${patient.getEthnicity()}">
+                                    <td th:text="${patient.getId()}" class="patientId">-1</td>
+                                    <td th:text="${patient.getDob()}">1970-01-01</td>
+                                    <td th:text="${patient.getLast_name()}">Demo_last</td>
+                                    <td th:text="${patient.getFirst_name()}">Demo_first</td>
+                                    <td>
+                                        <p class="view-a patientModifyButton">Modify</p>
+                                        <div class="patient-alerts-table-div" hidden>
+                                            <div class="alert-info" th:each="alert : ${patient.getAlerts()}">
+                                                <input type="hidden" class="alert-info-id" th:value="${alert.getAlert_id()}"/>
+                                                <input type="hidden" class="alert-info-value" th:value="${alert.getAlert_value()}"/>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="inset-panel">
+                    <div class="row">
+                        <div class="col-sm-4"><p></p></div>
+                        <div class="col-sm-4">
+                            <center><h3>Orders</h3></center>
+                        </div>
+                        <div class="col-sm-4">
+                            <p class="view-a orderCreateButton" style="font-size: 24px; float:right;">New</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <br>
+                    <div style="overflow-y: auto; max-height: 600px;">
+                        <table id="OrderTable" class="display">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Patient</th>
+                                    <th>Referral MD</th>
+                                    <th>Modality</th>
+                                    <th>Notes</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="order : ${orders_list}"
+                                
+                                th:attr="data-id=${order.getId()}, 
+                                data-patient=${order.getPatient()}, 
+                                data-referral_md=${order.getReferral_md()},
+                                data-status=${order.getStatus()},
+                                data-modality=${order.getModality()},
+                                data-notes=${order.getNotes()}">
+
+                                    <td th:text="${order.getId()}">-1</td>
+                                    <td th:text="${order.getPatientObject().getLast_name()} + ', ' + ${order.getPatientObject().getFirst_name()}">-1</td>
+                                    <td th:text="${order.getReferralMDObject().getFull_name()}">-1</td>
+                                    <td th:text="${order.getModalityObject().getName()}">-1</td>
+                                    <td th:text="${order.getNotes()}">-1</td>
+                                    <td th:text="${order.getStatusObject().getName()}">-1</td>
+                                    <td><p class="view-a orderModifyButton">Modify</p></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="inset-panel">
+                    <div class="row">
+                        <div class="col-sm-4"><p></p></div>
+                        <div class="col-sm-4">
+                            <center><h3>Appointments</h3></center>
+                        </div>
+                        <div class="col-sm-4">
+                            <p class="view-a appointmentCreateButton" style="font-size: 24px; float:right;">New</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <br>
+                    <div style="overflow-y: auto; max-height: 600px;">
+                        <table id="AppointmentTable" class="display">
+                            <thead>
+                                <tr>
+                                    <th>Appointment ID</th>
+                                    <th>Patient</th>
+                                    <th>Order</th>
+                                    <th>Date/Time</th>
+                                    <th>Technician</th>
+                                    <th>Radiologist</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="appointment : ${appointments_list}">
+
+                                    <td th:text="${appointment.getId()}">-1</td>
+                                    <td th:text="${appointment.getPatientObject().getLast_name() + ', ' + appointment.getPatientObject().getFirst_name()}">-1</td>
+                                    <td th:text="${appointment.getOrder()}">-1</td>
+                                    <td th:text="${appointment.getDatetime()}">-1</td>
+                                    <td th:text="${appointment.getTechnicianObject().getFull_name()}">-1</td>
+                                    <td th:text="${appointment.getRadiologistObject().getFull_name()}">-1</td>
+                                    <td><p class="view-a appointmentModifyButton">Modify</p>
+                                        <input type="hidden" class="data-id" th:value="${appointment.getId()}">
+                                        <input type="hidden" class="data-order" th:value="${appointment.getOrder()}">
+                                        <input type="hidden" class="data-phone" th:value="${appointment.getPhonenumber()}">
+                                        <input type="hidden" class="data-email" th:value="${appointment.getEmailaddress()}">
+                                        <input type="hidden" class="data-date" th:value="${appointment.getDate()}">
+                                        <input type="hidden" class="data-time" th:value="${appointment.getTime()}">
+                                        <input type="hidden" class="data-radiologist" th:value="${appointment.getRadiologist()}">
+                                        <input type="hidden" class="data-technician" th:value="${appointment.getTechnician()}">
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="inset-panel">
+                    <div class="row">
+                        <div class="col-sm-4"><p></p></div>
+                        <div class="col-sm-4">
+                            <center><h3>File Uploads</h3></center>
+                        </div>
+                        <div class="col-sm-4">
+                            <p class="view-a fileUploadCreateButton" style="font-size: 24px; float:right;">New</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <br>
+                    <div style="overflow-y: auto; max-height: 600px;">
+                        <table id="FileUploadTable" class="display">
+                            <thead>
+                                <tr>
+                                    <th>File Upload ID</th>
+                                    <th>File Name</th>
+                                    <th>File Type</th>
+                                    <th>Order</th>
+                                    <th></th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="file_upload : ${file_uploads_list}"
+                                
+                                th:attr="data-id=${file_upload.getId()}, 
+                                data-order=${file_upload.getOrder()}, 
+                                data-filename=${file_upload.getFilename()},
+                                data-filetype=${file_upload.getFiletype()}">
+
+                                    <td th:text="${file_upload.getId()}">-1</td>
+                                    <td th:text="${file_upload.getFilename()}">-1</td>
+                                    <td th:text="${file_upload.getFiletype()}">-1</td>
+                                    <td th:text="${file_upload.getOrder()}">-1</td>
+                                    <td><p class="view-a fileUploadDownloadButton">Download</p></td>
+                                    <td><p class="view-a fileUploadModifyButton">Modify</p></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="inset-panel">
+                    <div class="row">
+                        <div class="col-sm-4"><p></p></div>
+                        <div class="col-sm-4">
+                            <center><h3>Diagnostic Reports</h3></center>
+                        </div>
+                        <div class="col-sm-4">
+                            <p class="view-a diagnosticReportCreateButton" style="font-size: 24px; float:right;">New</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <br>
+                    <div style="overflow-y: auto; max-height: 600px;">
+                        <table id="DiagnosticReportTable" class="display">
+                            <thead>
+                                <tr>
+                                    <th>Diagnostic Report ID</th>
+                                    <th>Radiologist</th>
+                                    <th>Order</th>
+                                    <th>Report</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="diagnostic_report : ${diagnostic_reports_list}"
+                                
+                                th:attr="data-id=${diagnostic_report.getId()}, 
+                                data-order=${diagnostic_report.getOrder()}, 
+                                data-radiologist=${diagnostic_report.getRadiologist()},
+                                data-report=${diagnostic_report.getDiagnostic()}">
+
+                                    <td th:text="${diagnostic_report.getId()}">-1</td>
+                                    <td th:text="${diagnostic_report.getRadiologistObject().getFull_name()}">-1</td>
+                                    <td th:text="${diagnostic_report.getOrder()}">-1</td>
+                                    <td th:text="${diagnostic_report.getDiagnostic()}">-1</td>
+                                    <td><p class="view-a diagnosticReportModifyButton">Modify</p></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
