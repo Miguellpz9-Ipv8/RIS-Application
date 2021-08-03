@@ -251,7 +251,7 @@
                 <div class="sn-navbar-user" style="float:right;">
                     Logged in: <span sec:authentication="name">Username</span>
                 </div>
-
+<!-- This code provides USER user with contact information and instructions to request role --> 
                 <div class="inset-panel" sec:authorize="hasAnyAuthority('USER')">
                     <div class="row">
                         <div class="col-sm-12">
@@ -479,7 +479,7 @@
                 </div>
 
 
-
+<!--This block of code will provide the Referring physician a modality-->
                 <div class="row" sec:authorize="hasAnyAuthority('ADMIN', 'REFERRAL_DOCTOR')">
                     <div class="col-sm-12 panel">
 
@@ -492,23 +492,17 @@
                             <hr>
                             <br>
                             <div style="overflow-y: auto; max-height: 600px;">
-
                                 <table id="modalityDate" class="display">
                                     <thead>
                                         <tr >
-
                                             <th  class = "modItem">Modality</th>
-
                                             <th class = "modItem2">Dates being used</th>
-
                                         </tr>
                                     </thead>
                                     <tbody class = "modalityDate">
                                         <tr th:each="appointment : ${appointments_list}" >
-
                                             <td th:text="${appointment.getModalityObject().getName()}" class = "modItem">Modality</td>
                                             <td th:text="${appointment.getDatetime()}" class="modItem2">Dates being used</td>
-
                                         </tr>
                                     </tbody>
                                 </table>
@@ -518,8 +512,6 @@
 
                     </div>
                 </div>
-
-
 
 
                 <div class="inset-panel" sec:authorize="hasAnyAuthority('ADMIN', 'RADIOLOGIST')">
